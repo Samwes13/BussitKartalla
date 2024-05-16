@@ -2,11 +2,13 @@ import React, { useEffect } from 'react';
 import GtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const FetchHSL = ({ setBusData }) => {
+  // Käynnistetään pyyntö bussidatan hakemiseksi ja päivitetään se säännöllisin väliajoin
   useEffect(() => {
-    const intervalId = setInterval(fetchBusData, 1000);
-    return () => clearInterval(intervalId);
+    const intervalId = setInterval(fetchBusData, 1000); //Paivittaa sekunnin valein
+    return () => clearInterval(intervalId); // Puhdista intervali
   }, []);
 
+  // Hakee bussidatan ja päivittää sen GTFS-RT
   const fetchBusData = async () => {
     try {
       const response = await fetch('https://realtime.hsl.fi/realtime/vehicle-positions/v2/hsl');
@@ -22,18 +24,16 @@ const FetchHSL = ({ setBusData }) => {
     }
   };
 
+  // Parsii GTFS-datan ja muokkaa sen haluttuun muotoon
   const parseGTFSData = (buffer) => {
     try {
       const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
       return feed.entity.map(entity => {
         const vehicle = entity.vehicle;
-        const trip = entity.tripUpdate ? entity.tripUpdate.trip : null;
-        const tripId = trip ? trip.tripId : null;
-        const routeId = trip ? trip.routeId : 'Unknown';
-        // Lisätään routeId busData-objektiin
+        const routeId = entity.tripUpdate ? entity.tripUpdate.trip.routeId : 'Unknown';
+       
         return {
           id: `${vehicle.vehicle.id}`,
-          trip_id: tripId,
           position: vehicle.position,
           route_id: routeId,
           schedule_relationship: vehicle.schedule_relationship || 'SCHEDULED',

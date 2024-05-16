@@ -8,6 +8,7 @@ const BusTrackingApp = ({ busData }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const mapViewRef = useRef(null);
 
+  //Päivittää oamn sijainnin kartalla jatkuvasti ja kysyy luvan sijannin kayttoon
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -17,10 +18,11 @@ const BusTrackingApp = ({ busData }) => {
       }
       await updateLocation(); // Ensimmäinen sijainnin päivitys
       const intervalId = setInterval(updateLocation, 1000); // Päivittää sijainnin sekunnin välein
-      return () => clearInterval(intervalId); // Puhdista intervali komponentin purkamisen yhteydessä
+      return () => clearInterval(intervalId); // Puhdista intervali
     })();
   }, []);
 
+  //Oman Sijainnin päivitys
   const updateLocation = async () => {
     try {
       const location = await Location.getCurrentPositionAsync({});
@@ -30,6 +32,7 @@ const BusTrackingApp = ({ busData }) => {
     }
   };
 
+  //Oman sijainnin keskitys
   const handleCenterPress = () => {
     if (mapViewRef.current && currentLocation) {
       mapViewRef.current.animateToRegion({
@@ -41,6 +44,7 @@ const BusTrackingApp = ({ busData }) => {
     }
   };
 
+  // Yhdistää bussien tiedot ja muokkaa niitä - mutta tällä hetkellä mapppaa vaan bussien sijainnit 
   const mergedBusData = busData.map(bus => {
     const routeId = bus.routeId ? bus.routeId : 'Unknown';
     return {
