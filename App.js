@@ -1,20 +1,30 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import BusTrackingApp from './components/BusTrackingApp';
+import FetchHSL from './components/FetchHSL';
+import Frontscreen from './components/FrontScreen'; // Import the new screen component
+
+const Stack = createStackNavigator();
 
 export default function App() {
+  const [busData, setBusData] = useState([]);
+
   return (
-    <View style={styles.container}>
-      <BusTrackingApp />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Frontscreen"
+        screenOptions={{
+          headerTitle: 'Bussitkartallla',
+          headerShown: true, // Näyttää sama yläpalkin kaikilla sivuilla
+        }}
+      >
+        <Stack.Screen name="Frontscreen" component={Frontscreen} />
+        <Stack.Screen name="BusTrackingApp">
+          {props => <BusTrackingApp {...props} busData={busData} />}
+        </Stack.Screen>
+      </Stack.Navigator>
+      <FetchHSL setBusData={setBusData} />
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

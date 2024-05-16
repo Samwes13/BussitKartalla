@@ -1,30 +1,93 @@
-import React from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Alert, TouchableOpacity, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import { Icon } from '@rneui/themed'; // Import Icon component from React Native Elements
 
-const MapViewComponent = ({ busData }) => {
+const BusTrackingApp = ({ busData }) => {
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const mapViewRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('No permission to access location');
+        return;
+      }
+      await updateLocation(); // Ensimmäinen sijainnin päivitys
+      const intervalId = setInterval(updateLocation, 1000); // Päivittää sijainnin sekunnin välein
+      return () => clearInterval(intervalId); // Puhdista intervali komponentin purkamisen yhteydessä
+    })();
+  }, []);
+
+  const updateLocation = async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location);
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  };
+
+  const handleCenterPress = () => {
+    if (mapViewRef.current && currentLocation) {
+      mapViewRef.current.animateToRegion({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+        latitudeDelta: 0.007, 
+        longitudeDelta: 0.007, 
+      });
+    }
+  };
+
+  const mergedBusData = busData.map(bus => {
+    const routeId = bus.routeId ? bus.routeId : 'Unknown';
+    return {
+      ...bus,
+      routeId: routeId,
+    };
+  });
+
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapViewRef}
         style={styles.map}
         initialRegion={{
-          latitude: 60.1695,
-          longitude: 24.9354,
+          latitude: currentLocation ? currentLocation.coords.latitude : 60.1695,
+          longitude: currentLocation ? currentLocation.coords.longitude : 24.9354,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
       >
-        {busData.map((bus, index) => (
+        {currentLocation && (
           <Marker
-            key={index}
             coordinate={{
-              latitude: bus.position.latitude,
-              longitude: bus.position.longitude,
+              latitude: currentLocation.coords.latitude,
+              longitude: currentLocation.coords.longitude,
             }}
-            title={`Bus ${bus.vehicle.id}`}
+            title="Your Location"
+            description="You are here"
+            pinColor="blue" // Sininen pallo
+          />
+        )}
+        {mergedBusData.map(bus => (
+          <Marker
+            key={bus.id}
+            coordinate={{
+              latitude: bus.position?.latitude,
+              longitude: bus.position?.longitude,
+            }}
+            title={`${bus.id} - ${bus.routeId}`}
+            description={`${bus.schedule_relationship}, ${bus.occupancy_status}`}
+            pinColor="red" // Punainen pallo
           />
         ))}
       </MapView>
+      <TouchableOpacity style={styles.button} onPress={handleCenterPress}>
+        <Icon type="ionicon" name="compass" size={24} color="black" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -37,9 +100,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
+    width: '100%',
+    height: '100%',
+  },
+  button: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: '#ffffff',
+    padding: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#000000',
   },
 });
 
-export default MapViewComponent;
+export default BusTrackingApp;

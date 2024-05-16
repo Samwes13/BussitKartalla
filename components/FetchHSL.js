@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import GtfsRealtimeBindings from "gtfs-realtime-bindings";
 
-const BusDataComponent = ({ setBusData }) => {
+const FetchHSL = ({ setBusData }) => {
   useEffect(() => {
     const intervalId = setInterval(fetchBusData, 1000);
     return () => clearInterval(intervalId);
@@ -16,6 +16,7 @@ const BusDataComponent = ({ setBusData }) => {
       const buffer = await response.arrayBuffer();
       const parsedBusData = parseGTFSData(buffer);
       setBusData(parsedBusData);
+      //console.log(parsedBusData);
     } catch (error) {
       console.error(error);
     }
@@ -24,7 +25,21 @@ const BusDataComponent = ({ setBusData }) => {
   const parseGTFSData = (buffer) => {
     try {
       const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
-      return feed.entity.map(entity => entity.vehicle).filter(vehicle => vehicle != null);
+      return feed.entity.map(entity => {
+        const vehicle = entity.vehicle;
+        const trip = entity.tripUpdate ? entity.tripUpdate.trip : null;
+        const tripId = trip ? trip.tripId : null;
+        const routeId = trip ? trip.routeId : 'Unknown';
+        // Lisätään routeId busData-objektiin
+        return {
+          id: `${vehicle.vehicle.id}`,
+          trip_id: tripId,
+          position: vehicle.position,
+          route_id: routeId,
+          schedule_relationship: vehicle.schedule_relationship || 'SCHEDULED',
+          occupancy_status: vehicle.occupancy_status || 'UNKNOWN',
+        };
+      }).filter(vehicle => vehicle != null);
     } catch (error) {
       console.error('Error parsing GTFS data:', error);
       return [];
@@ -34,4 +49,4 @@ const BusDataComponent = ({ setBusData }) => {
   return null;
 };
 
-export default BusDataComponent;
+export default FetchHSL;
