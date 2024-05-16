@@ -1,2 +1,2 @@
-Vielä kesken.
-Teknologiat: React , javascript, GTFS-feed (HSL bussien sijainti tietojen saamiseen)
+
+Teknologiat: React, javascript, GTFS-feed (HSL bussien sijainti tietojen saamiseen)
